@@ -144,3 +144,37 @@
   background: color-mix(in oklab, var(--color-muted) 70%, transparent);
   border-radius: var(--radius-md);
 }
+
+@keyframes swipe-hint-left {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(-6px);
+    opacity: 0.6;
+  }
+}
+
+@keyframes swipe-hint-right {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(6px);
+    opacity: 0.6;
+  }
+}
+
+@keyframes swipe-hand {
+  0%,
+  100% {
+    transform: translateX(14px) rotate(8deg);
+  }
+  50% {
+    transform: translateX(-14px) rotate(-8deg);
+  }
+}

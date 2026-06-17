@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { PreviewOnboardingOverlay } from "@/components/quick/preview-onboarding-overlay";
+
 type QuickSong = {
   id: string;
   title: string;
@@ -104,6 +106,8 @@ export function LyricsSwiper({ playlistTitle, songs }: LyricsSwiperProps) {
           </section>
         ))}
       </div>
+
+      <PreviewOnboardingOverlay />
     </div>
   );
 }
