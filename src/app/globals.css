@@ -133,13 +133,6 @@
   margin-bottom: 1.25rem;
 }
 
-.chord-sheet .row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.5rem;
-  line-height: 1.8;
-}
-
 .chord-sheet .chord {
   font-weight: 700;
   color: var(--color-primary);

@@ -2,8 +2,10 @@
 
 import { useMemo } from "react";
 
-import { renderSong } from "@/lib/chordpro";
+import { getChordSheetCss, renderSong } from "@/lib/chordpro";
 import { cn } from "@/lib/utils";
+
+const chordSheetCss = getChordSheetCss();
 
 type ChordSheetProps = {
   content: string;
@@ -22,9 +24,12 @@ export function ChordSheet({
   );
 
   return (
-    <div
-      className={cn("chord-sheet prose prose-sm max-w-none dark:prose-invert", className)}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+    <>
+      <style dangerouslySetInnerHTML={{ __html: chordSheetCss }} />
+      <div
+        className={cn("chord-sheet max-w-none", className)}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    </>
   );
 }
