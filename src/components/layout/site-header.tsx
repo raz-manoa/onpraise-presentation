@@ -18,6 +18,9 @@ export function SiteHeader() {
           <LinkButton variant="ghost" href="/playlists">
             Playlists
           </LinkButton>
+          <LinkButton variant="ghost" href="/quick">
+            Playlists rapides
+          </LinkButton>
           <LinkButton href="/playlists/new" size="sm">
             <Plus className="size-4" />
             Nouvelle playlist

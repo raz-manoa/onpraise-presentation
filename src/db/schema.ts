@@ -72,3 +72,39 @@ export const playlistSongsRelations = relations(playlistSongs, ({ one }) => ({
     references: [songs.id],
   }),
 }));
+
+export const quickPlaylists = pgTable("quick_playlists", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const quickSongs = pgTable(
+  "quick_songs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    quickPlaylistId: uuid("quick_playlist_id")
+      .notNull()
+      .references(() => quickPlaylists.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    lyrics: text("lyrics").notNull(),
+    position: integer("position").notNull(),
+  },
+  (table) => [
+    index("quick_songs_playlist_position_idx").on(
+      table.quickPlaylistId,
+      table.position,
+    ),
+  ],
+);
+
+export const quickPlaylistsRelations = relations(quickPlaylists, ({ many }) => ({
+  quickSongs: many(quickSongs),
+}));
+
+export const quickSongsRelations = relations(quickSongs, ({ one }) => ({
+  quickPlaylist: one(quickPlaylists, {
+    fields: [quickSongs.quickPlaylistId],
+    references: [quickPlaylists.id],
+  }),
+}));
