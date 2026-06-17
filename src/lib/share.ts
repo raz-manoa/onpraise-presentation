@@ -10,3 +10,8 @@ export function getPublicUrl(shareCode: string): string {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   return `${baseUrl}/p/${shareCode}`;
 }
+
+export function getQuickPreviewUrl(slug: string): string {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  return `${baseUrl}/q/${slug}`;
+}

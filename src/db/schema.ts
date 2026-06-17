@@ -73,11 +73,16 @@ export const playlistSongsRelations = relations(playlistSongs, ({ one }) => ({
   }),
 }));
 
-export const quickPlaylists = pgTable("quick_playlists", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  title: text("title").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const quickPlaylists = pgTable(
+  "quick_playlists",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    title: text("title").notNull(),
+    slug: text("slug"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("quick_playlists_slug_idx").on(table.slug)],
+);
 
 export const quickSongs = pgTable(
   "quick_songs",

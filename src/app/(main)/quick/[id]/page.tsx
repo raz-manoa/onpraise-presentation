@@ -2,10 +2,15 @@ import { notFound } from "next/navigation";
 import { Play } from "lucide-react";
 
 import { QuickPlaylistTitleEditor } from "@/components/quick/quick-playlist-title-editor";
+import { QuickSharePanel } from "@/components/quick/quick-share-panel";
 import { QuickSongForm } from "@/components/quick/quick-song-form";
 import { QuickSongList } from "@/components/quick/quick-song-list";
 import { LinkButton } from "@/components/ui/link-button";
-import { getQuickPlaylist } from "@/lib/actions/quick-playlists";
+import {
+  ensureQuickPlaylistSlug,
+  getQuickPlaylist,
+} from "@/lib/actions/quick-playlists";
+import { getQuickPreviewUrl } from "@/lib/share";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +25,8 @@ export default async function QuickPlaylistPage({
   const playlist = await getQuickPlaylist(id);
 
   if (!playlist) notFound();
+
+  const slug = playlist.slug ?? (await ensureQuickPlaylistSlug(playlist.id));
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
@@ -43,6 +50,8 @@ export default async function QuickPlaylistPage({
         playlistId={playlist.id}
         songs={playlist.songs}
       />
+
+      <QuickSharePanel url={getQuickPreviewUrl(slug)} />
     </div>
   );
 }

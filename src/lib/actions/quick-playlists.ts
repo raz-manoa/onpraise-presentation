@@ -1,12 +1,13 @@
 "use server";
 
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { db } from "@/db";
 import { quickPlaylists, quickSongs } from "@/db/schema";
 import { hasLyricsContent, sanitizeLyrics } from "@/lib/sanitize-lyrics";
+import { slugify } from "@/lib/slug";
 
 const quickPlaylistSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
@@ -20,6 +21,37 @@ const quickSongSchema = z.object({
 export type QuickPlaylistWithSongs = NonNullable<
   Awaited<ReturnType<typeof getQuickPlaylist>>
 >;
+
+async function generateUniqueQuickSlug(title: string, excludeId?: string) {
+  const base = slugify(title);
+  let candidate = base;
+  let suffix = 2;
+
+  while (true) {
+    const conditions = excludeId
+      ? and(eq(quickPlaylists.slug, candidate), ne(quickPlaylists.id, excludeId))
+      : eq(quickPlaylists.slug, candidate);
+
+    const [existing] = await db
+      .select({ id: quickPlaylists.id })
+      .from(quickPlaylists)
+      .where(conditions)
+      .limit(1);
+
+    if (!existing) return candidate;
+
+    candidate = `${base}-${suffix}`;
+    suffix += 1;
+  }
+}
+
+async function getQuickPlaylistSongs(playlistId: string) {
+  return db
+    .select()
+    .from(quickSongs)
+    .where(eq(quickSongs.quickPlaylistId, playlistId))
+    .orderBy(asc(quickSongs.position));
+}
 
 export async function getQuickPlaylists() {
   return db
@@ -37,23 +69,54 @@ export async function getQuickPlaylist(id: string) {
 
   if (!playlist) return null;
 
-  const songs = await db
-    .select()
-    .from(quickSongs)
-    .where(eq(quickSongs.quickPlaylistId, id))
-    .orderBy(asc(quickSongs.position));
+  const songs = await getQuickPlaylistSongs(id);
 
   return { ...playlist, songs };
+}
+
+export async function getQuickPlaylistBySlug(slug: string) {
+  const [playlist] = await db
+    .select()
+    .from(quickPlaylists)
+    .where(eq(quickPlaylists.slug, slug))
+    .limit(1);
+
+  if (!playlist) return null;
+
+  const songs = await getQuickPlaylistSongs(playlist.id);
+
+  return { ...playlist, songs };
+}
+
+export async function ensureQuickPlaylistSlug(id: string) {
+  const playlist = await getQuickPlaylist(id);
+  if (!playlist) throw new Error("Playlist introuvable");
+
+  if (playlist.slug) return playlist.slug;
+
+  const slug = await generateUniqueQuickSlug(playlist.title, id);
+
+  const [updated] = await db
+    .update(quickPlaylists)
+    .set({ slug })
+    .where(eq(quickPlaylists.id, id))
+    .returning();
+
+  revalidatePath(`/quick/${id}`);
+  revalidatePath(`/q/${slug}`);
+
+  return updated.slug!;
 }
 
 export async function createQuickPlaylist(
   input: z.infer<typeof quickPlaylistSchema>,
 ) {
   const data = quickPlaylistSchema.parse(input);
+  const slug = await generateUniqueQuickSlug(data.title);
 
   const [playlist] = await db
     .insert(quickPlaylists)
-    .values({ title: data.title })
+    .values({ title: data.title, slug })
     .returning();
 
   revalidatePath("/quick");
@@ -62,21 +125,32 @@ export async function createQuickPlaylist(
 
 export async function updateQuickPlaylistTitle(id: string, title: string) {
   const data = quickPlaylistSchema.parse({ title });
+  const existing = await getQuickPlaylist(id);
+  if (!existing) throw new Error("Playlist introuvable");
+
+  const slug = await generateUniqueQuickSlug(data.title, id);
 
   const [playlist] = await db
     .update(quickPlaylists)
-    .set({ title: data.title })
+    .set({ title: data.title, slug })
     .where(eq(quickPlaylists.id, id))
     .returning();
 
   revalidatePath("/quick");
   revalidatePath(`/quick/${id}`);
+  if (existing.slug) revalidatePath(`/q/${existing.slug}`);
+  if (slug) revalidatePath(`/q/${slug}`);
+
   return playlist;
 }
 
 export async function deleteQuickPlaylist(id: string) {
+  const playlist = await getQuickPlaylist(id);
+
   await db.delete(quickPlaylists).where(eq(quickPlaylists.id, id));
+
   revalidatePath("/quick");
+  if (playlist?.slug) revalidatePath(`/q/${playlist.slug}`);
 }
 
 export async function addQuickSong(
@@ -106,6 +180,9 @@ export async function addQuickSong(
     .returning();
 
   revalidatePath(`/quick/${playlistId}`);
+  const playlist = await getQuickPlaylist(playlistId);
+  if (playlist?.slug) revalidatePath(`/q/${playlist.slug}`);
+
   return song;
 }
 
@@ -128,6 +205,8 @@ export async function updateQuickSong(
   if (song) {
     revalidatePath(`/quick/${song.quickPlaylistId}`);
     revalidatePath(`/quick/${song.quickPlaylistId}/preview`);
+    const playlist = await getQuickPlaylist(song.quickPlaylistId);
+    if (playlist?.slug) revalidatePath(`/q/${playlist.slug}`);
   }
 
   return song;
@@ -136,6 +215,8 @@ export async function updateQuickSong(
 export async function removeQuickSong(playlistId: string, songId: string) {
   await db.delete(quickSongs).where(eq(quickSongs.id, songId));
   revalidatePath(`/quick/${playlistId}`);
+  const playlist = await getQuickPlaylist(playlistId);
+  if (playlist?.slug) revalidatePath(`/q/${playlist.slug}`);
 }
 
 export async function reorderQuickSongs(
@@ -152,4 +233,6 @@ export async function reorderQuickSongs(
   );
 
   revalidatePath(`/quick/${playlistId}`);
+  const playlist = await getQuickPlaylist(playlistId);
+  if (playlist?.slug) revalidatePath(`/q/${playlist.slug}`);
 }
