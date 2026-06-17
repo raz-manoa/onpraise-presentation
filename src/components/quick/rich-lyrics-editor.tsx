@@ -15,7 +15,8 @@ import { cn } from "@/lib/utils";
 
 type RichLyricsEditorProps = {
   id?: string;
-  value: string;
+  defaultValue?: string;
+  value?: string;
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
@@ -166,12 +167,14 @@ function insertHtmlAtCursor(html: string) {
 
 export function RichLyricsEditor({
   id,
+  defaultValue = "",
   value,
   onChange,
   placeholder = "Collez les paroles ici...",
   className,
 }: RichLyricsEditorProps) {
   const editorRef = useRef<HTMLPreElement>(null);
+  const initializedRef = useRef(false);
 
   function syncContent() {
     const editor = editorRef.current;
@@ -228,10 +231,17 @@ export function RichLyricsEditor({
     const editor = editorRef.current;
     if (!editor) return;
 
+    if (!initializedRef.current && defaultValue) {
+      editor.innerHTML = lyricsHtmlToEditorHtml(defaultValue);
+      initializedRef.current = true;
+      return;
+    }
+
     if (value === "" && editor.innerHTML !== "") {
       editor.innerHTML = "";
+      initializedRef.current = false;
     }
-  }, [value]);
+  }, [defaultValue, value]);
 
   return (
     <div className={cn("space-y-2", className)}>

@@ -127,6 +127,7 @@ export async function updateQuickSong(
 
   if (song) {
     revalidatePath(`/quick/${song.quickPlaylistId}`);
+    revalidatePath(`/quick/${song.quickPlaylistId}/preview`);
   }
 
   return song;

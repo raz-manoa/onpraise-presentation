@@ -17,9 +17,10 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Trash2 } from "lucide-react";
+import { GripVertical, Pencil, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
 
+import { QuickSongEditDialog } from "@/components/quick/quick-song-edit-dialog";
 import { Button } from "@/components/ui/button";
 import {
   reorderQuickSongs,
@@ -41,6 +42,7 @@ function SortableItem({
   playlistId: string;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: song.id });
 
@@ -79,10 +81,25 @@ function SortableItem({
         variant="ghost"
         size="icon"
         disabled={isPending}
+        onClick={() => setIsEditOpen(true)}
+        aria-label={`Modifier ${song.title}`}
+      >
+        <Pencil className="size-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        disabled={isPending}
         onClick={handleRemove}
+        aria-label={`Supprimer ${song.title}`}
       >
         <Trash2 className="size-4" />
       </Button>
+      <QuickSongEditDialog
+        song={song}
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+      />
     </div>
   );
 }
