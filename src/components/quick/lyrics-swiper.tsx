@@ -92,7 +92,7 @@ export function LyricsSwiper({ playlistTitle, songs }: LyricsSwiperProps) {
           >
             <div className="mx-auto max-w-3xl">
               <h1 className="mb-6 text-2xl font-bold">{song.title}</h1>
-              <p className="whitespace-pre-wrap text-base leading-relaxed sm:text-lg">
+              <p className="whitespace-pre-wrap text-base sm:text-lg">
                 {song.lyrics}
               </p>
             </div>
