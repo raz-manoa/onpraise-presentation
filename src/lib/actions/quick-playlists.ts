@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { db } from "@/db";
 import { quickPlaylists, quickSongs } from "@/db/schema";
+import { hasLyricsContent, sanitizeLyrics } from "@/lib/sanitize-lyrics";
 
 const quickPlaylistSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
@@ -13,7 +14,7 @@ const quickPlaylistSchema = z.object({
 
 const quickSongSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
-  lyrics: z.string().min(1, "Les paroles sont requises"),
+  lyrics: z.string().refine(hasLyricsContent, "Les paroles sont requises"),
 });
 
 export type QuickPlaylistWithSongs = NonNullable<
@@ -83,6 +84,7 @@ export async function addQuickSong(
   input: z.infer<typeof quickSongSchema>,
 ) {
   const data = quickSongSchema.parse(input);
+  const lyrics = sanitizeLyrics(data.lyrics);
 
   const existing = await db
     .select({ position: quickSongs.position })
@@ -98,7 +100,7 @@ export async function addQuickSong(
     .values({
       quickPlaylistId: playlistId,
       title: data.title,
-      lyrics: data.lyrics,
+      lyrics,
       position: nextPosition,
     })
     .returning();
@@ -112,12 +114,13 @@ export async function updateQuickSong(
   input: z.infer<typeof quickSongSchema>,
 ) {
   const data = quickSongSchema.parse(input);
+  const lyrics = sanitizeLyrics(data.lyrics);
 
   const [song] = await db
     .update(quickSongs)
     .set({
       title: data.title,
-      lyrics: data.lyrics,
+      lyrics,
     })
     .where(eq(quickSongs.id, id))
     .returning();

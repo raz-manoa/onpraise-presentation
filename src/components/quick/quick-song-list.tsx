@@ -26,6 +26,7 @@ import {
   removeQuickSong,
   type QuickPlaylistWithSongs,
 } from "@/lib/actions/quick-playlists";
+import { stripLyricsTags } from "@/lib/sanitize-lyrics";
 
 type QuickSongListProps = {
   playlistId: string;
@@ -71,7 +72,7 @@ function SortableItem({
       <div className="flex-1">
         <p className="font-medium">{song.title}</p>
         <p className="line-clamp-1 text-sm text-muted-foreground">
-          {song.lyrics}
+          {stripLyricsTags(song.lyrics)}
         </p>
       </div>
       <Button

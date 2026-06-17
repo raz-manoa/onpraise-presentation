@@ -5,8 +5,9 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichLyricsEditor } from "@/components/quick/rich-lyrics-editor";
 import { addQuickSong } from "@/lib/actions/quick-playlists";
+import { hasLyricsContent } from "@/lib/sanitize-lyrics";
 
 type QuickSongFormProps = {
   playlistId: string;
@@ -21,6 +22,11 @@ export function QuickSongForm({ playlistId }: QuickSongFormProps) {
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+
+    if (!hasLyricsContent(lyrics)) {
+      setError("Les paroles sont requises");
+      return;
+    }
 
     startTransition(async () => {
       try {
@@ -52,13 +58,11 @@ export function QuickSongForm({ playlistId }: QuickSongFormProps) {
       </div>
       <div className="grid gap-2">
         <Label htmlFor="song-lyrics">Paroles</Label>
-        <Textarea
+        <RichLyricsEditor
           id="song-lyrics"
           value={lyrics}
-          onChange={(event) => setLyrics(event.target.value)}
+          onChange={setLyrics}
           placeholder="Collez les paroles ici..."
-          rows={10}
-          required
         />
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
