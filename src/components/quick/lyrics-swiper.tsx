@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import {
+  MusicianModeControls,
+  useMusicianModePreferences,
+} from "@/components/quick/musician-mode-controls";
 import { PreviewOnboardingOverlay } from "@/components/quick/preview-onboarding-overlay";
+import { useAutoScroll } from "@/components/quick/use-auto-scroll";
+import { cn } from "@/lib/utils";
 
 type QuickSong = {
   id: string;
@@ -17,10 +23,29 @@ type LyricsSwiperProps = {
 
 export function LyricsSwiper({ playlistTitle, songs }: LyricsSwiperProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef<(HTMLElement | null)[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const {
+    enabled: musicianMode,
+    speed: scrollSpeed,
+    autoNext,
+    setEnabled: setMusicianMode,
+    setSpeed: setScrollSpeed,
+    setAutoNext,
+  } = useMusicianModePreferences();
 
   const progress =
     songs.length > 0 ? ((activeIndex + 1) / songs.length) * 100 : 0;
+
+  useAutoScroll({
+    enabled: musicianMode,
+    speed: scrollSpeed,
+    autoNext,
+    activeIndex,
+    songCount: songs.length,
+    sectionRefs,
+    horizontalContainerRef: containerRef,
+  });
 
   useEffect(() => {
     const container = containerRef.current;
@@ -72,25 +97,46 @@ export function LyricsSwiper({ playlistTitle, songs }: LyricsSwiperProps) {
       </div>
 
       <header className="sticky top-1 z-10 border-b bg-background/95 px-4 py-3 backdrop-blur">
-        <div className="mx-auto max-w-3xl">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            {playlistTitle}
-          </p>
-          <p className="text-sm font-medium">
-            Chant {activeIndex + 1} / {songs.length}
-          </p>
+        <div className="mx-auto flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              {playlistTitle}
+            </p>
+            <p
+              className="text-sm font-medium"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              Chant {activeIndex + 1} / {songs.length}
+            </p>
+          </div>
+
+          <MusicianModeControls
+            enabled={musicianMode}
+            onEnabledChange={setMusicianMode}
+            speed={scrollSpeed}
+            onSpeedChange={setScrollSpeed}
+            autoNext={autoNext}
+            onAutoNextChange={setAutoNext}
+          />
         </div>
       </header>
 
       <div
         ref={containerRef}
-        className="flex flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden"
+        className="flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden"
         style={{ touchAction: "pan-x pan-y" }}
       >
-        {songs.map((song) => (
+        {songs.map((song, index) => (
           <section
             key={song.id}
-            className="h-[calc(100dvh-4.5rem)] w-full shrink-0 snap-start overflow-y-auto px-4 py-6"
+            ref={(element) => {
+              sectionRefs.current[index] = element;
+            }}
+            className={cn(
+              "h-full w-full shrink-0 snap-start px-4 py-6",
+              musicianMode ? "overflow-y-hidden" : "overflow-y-auto",
+            )}
           >
             <div className="mx-auto max-w-3xl">
               <h1 className="mb-6 text-2xl font-bold">{song.title}</h1>
