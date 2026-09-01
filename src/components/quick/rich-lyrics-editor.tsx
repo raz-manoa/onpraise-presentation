@@ -66,17 +66,59 @@ function normalizePlainText(text: string): string {
 
 function isBoldElement(element: Element): boolean {
   const tag = element.tagName.toLowerCase();
-  if (tag === "b" || tag === "strong") return true;
-
   const style = element.getAttribute("style") ?? "";
   const fontWeightMatch = style.match(/font-weight:\s*([^;]+)/i);
-  if (!fontWeightMatch) return false;
 
-  const weight = fontWeightMatch[1].trim().toLowerCase();
-  if (weight === "bold" || weight === "bolder") return true;
+  if (fontWeightMatch) {
+    const weight = fontWeightMatch[1].trim().toLowerCase();
+    if (weight === "normal" || weight === "lighter") return false;
+    if (weight === "bold" || weight === "bolder") return true;
 
-  const numericWeight = Number.parseInt(weight, 10);
-  return !Number.isNaN(numericWeight) && numericWeight >= 600;
+    const numericWeight = Number.parseInt(weight, 10);
+    return !Number.isNaN(numericWeight) && numericWeight >= 600;
+  }
+
+  return tag === "b" || tag === "strong";
+}
+
+function isSerializedBlock(element: HTMLElement, tag: string): boolean {
+  if (BLOCK_TAGS.has(tag)) return true;
+
+  const style = element.getAttribute("style") ?? "";
+  return /display\s*:\s*(block|flex|grid)/i.test(style);
+}
+
+function isMeaningfulPasteNode(node: Node): boolean {
+  if (node.nodeType === Node.COMMENT_NODE) return false;
+  if (node.nodeType === Node.TEXT_NODE) {
+    return (node.textContent ?? "").trim().length > 0;
+  }
+  return node.nodeType === Node.ELEMENT_NODE;
+}
+
+function getPasteRootNodes(doc: Document): Iterable<Node> {
+  const meaningful = Array.from(doc.body.childNodes).filter(isMeaningfulPasteNode);
+
+  if (
+    meaningful.length === 1 &&
+    meaningful[0].nodeType === Node.ELEMENT_NODE
+  ) {
+    const wrapper = meaningful[0] as HTMLElement;
+    if (wrapper.tagName.toLowerCase() === "pre") {
+      return wrapper.childNodes;
+    }
+
+    const innerPre = wrapper.querySelector(":scope > pre");
+    if (innerPre && wrapper.childElementCount === 1) {
+      return innerPre.childNodes;
+    }
+  }
+
+  return doc.body.childNodes;
+}
+
+function countLineBreaks(text: string): number {
+  return (text.match(/\n/g) ?? []).length;
 }
 
 function wrapBold(content: string, isBold: boolean): string {
@@ -108,15 +150,7 @@ function serializeLyricsNodes(
       return;
     }
 
-    if (INLINE_TAGS.has(tag)) {
-      result += wrapBold(
-        serializeLyricsNodes(element.childNodes, isBold),
-        isBold,
-      );
-      return;
-    }
-
-    if (BLOCK_TAGS.has(tag)) {
+    if (isSerializedBlock(element, tag)) {
       if (index > 0 && !result.endsWith("\n")) {
         result += "\n";
       }
@@ -132,6 +166,14 @@ function serializeLyricsNodes(
       return;
     }
 
+    if (INLINE_TAGS.has(tag)) {
+      result += wrapBold(
+        serializeLyricsNodes(element.childNodes, isBold),
+        isBold,
+      );
+      return;
+    }
+
     result += wrapBold(
       serializeLyricsNodes(element.childNodes, isBold),
       isBold,
@@ -143,7 +185,7 @@ function serializeLyricsNodes(
 
 function convertPasteToLyricsHtml(html: string): string {
   const doc = new DOMParser().parseFromString(html, "text/html");
-  return serializeLyricsNodes(doc.body.childNodes);
+  return serializeLyricsNodes(getPasteRootNodes(doc));
 }
 
 function setEditorHtml(editor: HTMLElement, html: string) {
@@ -163,6 +205,40 @@ function insertHtmlAtCursor(html: string) {
   range.collapse(false);
   selection.removeAllRanges();
   selection.addRange(range);
+}
+
+function insertConvertedHtml(editor: HTMLElement, html: string) {
+  const selection = window.getSelection();
+  const isEditorEmpty = editor.textContent?.trim().length === 0;
+  const isAllSelected =
+    selection &&
+    !selection.isCollapsed &&
+    selection.toString().length === editor.textContent?.length;
+
+  if (isEditorEmpty || isAllSelected) {
+    setEditorHtml(editor, html);
+  } else {
+    insertHtmlAtCursor(html);
+  }
+}
+
+function pasteHtmlToStorageHtml(html: string, plain: string): string {
+  const fromHtml = html ? convertPasteToLyricsHtml(html) : "";
+  const htmlBreaks = countLineBreaks(fromHtml);
+  const plainBreaks = countLineBreaks(plain);
+  const preferHtml =
+    fromHtml.length > 0 &&
+    (htmlHasBoldMarkup(html) || htmlBreaks >= plainBreaks);
+
+  if (preferHtml) {
+    return lyricsHtmlToEditorHtml(fromHtml);
+  }
+
+  if (plain.length > 0) {
+    return plainTextToStorageHtml(plain);
+  }
+
+  return "";
 }
 
 export function RichLyricsEditor({
@@ -189,41 +265,18 @@ export function RichLyricsEditor({
   }
 
   function handlePaste(event: React.ClipboardEvent<HTMLPreElement>) {
+    event.preventDefault();
+
     const plain = normalizePlainText(event.clipboardData.getData("text/plain"));
     const html = event.clipboardData.getData("text/html");
     const editor = editorRef.current;
 
     if (!editor) return;
 
-    if (plain.length > 0 && !htmlHasBoldMarkup(html)) {
-      return;
-    }
-
-    event.preventDefault();
-
-    let storageHtml = "";
-
-    if (plain.length > 0) {
-      storageHtml = plainTextToStorageHtml(plain);
-    } else if (html) {
-      storageHtml = lyricsHtmlToEditorHtml(convertPasteToLyricsHtml(html));
-    }
-
+    const storageHtml = pasteHtmlToStorageHtml(html, plain);
     if (!storageHtml) return;
 
-    const selection = window.getSelection();
-    const isEditorEmpty = editor.textContent?.trim().length === 0;
-    const isAllSelected =
-      selection &&
-      !selection.isCollapsed &&
-      selection.toString().length === editor.textContent?.length;
-
-    if (isEditorEmpty || isAllSelected) {
-      setEditorHtml(editor, storageHtml);
-    } else {
-      insertHtmlAtCursor(storageHtml);
-    }
-
+    insertConvertedHtml(editor, storageHtml);
     syncContent();
   }
 

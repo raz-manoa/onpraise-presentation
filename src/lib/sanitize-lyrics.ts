@@ -6,13 +6,21 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
   disallowedTagsMode: "discard",
 };
 
+const BLOCK_TAG_PATTERN = "div|p|li|tr|h[1-6]|blockquote|pre|o:p";
+
 function normalizeBlockStructure(html: string): string {
   return html
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/(div|p|li|tr|h[1-6]|o:p)[^>]*>\s*<(div|p|li|tr|h[1-6]|o:p)[^>]*>/gi, "\n")
-    .replace(/<\/?(div|p|li|tr|h[1-6]|o:p)[^>]*>/gi, "\n");
+    .replace(
+      new RegExp(
+        `</(${BLOCK_TAG_PATTERN})\\b[^>]*>\\s*<(${BLOCK_TAG_PATTERN})\\b[^>]*>`,
+        "gi",
+      ),
+      "\n",
+    )
+    .replace(new RegExp(`</?(${BLOCK_TAG_PATTERN})\\b[^>]*>`, "gi"), "\n");
 }
 
 function newlinesToBreaks(text: string): string {
