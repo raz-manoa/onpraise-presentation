@@ -38,10 +38,10 @@ export function PreviewOnboardingOverlay() {
     <button
       type="button"
       onClick={handleDismiss}
-      aria-label="Balayez vers la gauche ou la droite pour changer de chant"
+      aria-label="Naviguez entre les chants"
       className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-5 bg-black/70 backdrop-blur-sm"
     >
-      <div className="flex items-center gap-3 text-white">
+      <div className="flex items-center gap-3 text-white pointer-fine:hidden">
         <ChevronLeft
           className="size-8 opacity-60 motion-safe:animate-[swipe-hint-left_1.4s_ease-in-out_infinite]"
           aria-hidden
@@ -55,8 +55,15 @@ export function PreviewOnboardingOverlay() {
           aria-hidden
         />
       </div>
-      <p className="text-sm font-medium text-white/80">
+      <div className="hidden items-center gap-8 text-white pointer-fine:flex">
+        <ChevronLeft className="size-10 opacity-80" aria-hidden />
+        <ChevronRight className="size-10 opacity-80" aria-hidden />
+      </div>
+      <p className="text-sm font-medium text-white/80 pointer-fine:hidden">
         Balayez pour naviguer
+      </p>
+      <p className="hidden text-sm font-medium text-white/80 pointer-fine:block">
+        Utilisez les flèches pour changer de chant
       </p>
     </button>
   );
