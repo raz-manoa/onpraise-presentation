@@ -12,7 +12,7 @@ export default function QuickPreviewLayout({
 }>) {
   return (
     <div
-      className={robotoMono.className}
+      className={`${robotoMono.className} h-dvh`}
       style={{
         fontFamily: '"Roboto Mono", "Courier New", monospace',
         lineHeight: "1.4em",

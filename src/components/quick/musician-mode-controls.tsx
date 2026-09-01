@@ -96,6 +96,14 @@ type MusicianModePreferences = {
   autoNext: boolean;
 };
 
+const SERVER_SNAPSHOT: MusicianModePreferences = {
+  enabled: false,
+  speed: DEFAULT_SCROLL_SPEED,
+  autoNext: false,
+};
+
+let clientSnapshot: MusicianModePreferences = SERVER_SNAPSHOT;
+
 const preferenceListeners = new Set<() => void>();
 
 function emitPreferenceChange() {
@@ -115,16 +123,12 @@ function subscribeToMusicianModePreferences(onStoreChange: () => void) {
 }
 
 function getMusicianModeServerSnapshot(): MusicianModePreferences {
-  return {
-    enabled: false,
-    speed: DEFAULT_SCROLL_SPEED,
-    autoNext: false,
-  };
+  return SERVER_SNAPSHOT;
 }
 
 export function readMusicianModePreferences(): MusicianModePreferences {
   if (typeof window === "undefined") {
-    return getMusicianModeServerSnapshot();
+    return SERVER_SNAPSHOT;
   }
 
   const enabled =
@@ -138,7 +142,16 @@ export function readMusicianModePreferences(): MusicianModePreferences {
   const autoNext =
     localStorage.getItem(MUSICIAN_MODE_STORAGE_KEYS.autoNext) === "1";
 
-  return { enabled, speed, autoNext };
+  if (
+    clientSnapshot.enabled === enabled &&
+    clientSnapshot.speed === speed &&
+    clientSnapshot.autoNext === autoNext
+  ) {
+    return clientSnapshot;
+  }
+
+  clientSnapshot = { enabled, speed, autoNext };
+  return clientSnapshot;
 }
 
 export function useMusicianModePreferences() {

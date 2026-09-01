@@ -88,7 +88,7 @@ export function LyricsSwiper({ playlistTitle, songs }: LyricsSwiperProps) {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-background">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background">
       <div className="fixed inset-x-0 top-0 z-20 h-1 bg-muted">
         <div
           className="h-full bg-primary transition-all duration-300 ease-out"
@@ -134,8 +134,8 @@ export function LyricsSwiper({ playlistTitle, songs }: LyricsSwiperProps) {
               sectionRefs.current[index] = element;
             }}
             className={cn(
-              "h-full w-full shrink-0 snap-start px-4 py-6",
-              musicianMode ? "overflow-y-hidden" : "overflow-y-auto",
+              "h-full min-h-0 w-full min-w-full shrink-0 snap-start overflow-y-auto px-4 py-6",
+              musicianMode && "overscroll-y-none",
             )}
           >
             <div className="mx-auto max-w-3xl">
