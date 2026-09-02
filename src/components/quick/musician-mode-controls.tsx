@@ -34,24 +34,22 @@ export function MusicianModeControls({
   onAutoNextChange,
 }: MusicianModeControlsProps) {
   return (
-    <div className="flex flex-col gap-2 sm:items-end">
+    <>
       <Button
         type="button"
         variant={enabled ? "default" : "outline"}
-        size="sm"
-        className="min-h-11"
+        size="icon-sm"
         aria-pressed={enabled}
         aria-label={
           enabled ? "Désactiver le mode musicien" : "Activer le mode musicien"
         }
         onClick={() => onEnabledChange(!enabled)}
       >
-        <Guitar className="size-4" />
-        Mode musicien
+        <Guitar />
       </Button>
 
       {enabled && (
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="col-span-2 flex flex-wrap items-center gap-3 sm:justify-end">
           <label className="flex min-h-11 min-w-44 items-center gap-2 text-xs text-muted-foreground">
             <span className="shrink-0">Vitesse</span>
             <input
@@ -86,7 +84,7 @@ export function MusicianModeControls({
           </Button>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

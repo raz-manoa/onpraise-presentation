@@ -106,7 +106,7 @@ export function LyricsSwiper({ playlistTitle, songs }: LyricsSwiperProps) {
       </div>
 
       <header className="sticky top-1 z-10 border-b bg-background/95 px-4 py-3 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="mx-auto grid max-w-3xl grid-cols-[1fr_auto] items-start gap-x-3 gap-y-2">
           <div>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
               {playlistTitle}
