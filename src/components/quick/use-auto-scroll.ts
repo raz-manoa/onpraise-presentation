@@ -3,6 +3,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 
 const END_THRESHOLD = 8;
+const TOP_THRESHOLD = 16;
 
 function resetScrollTop(element: HTMLElement) {
   element.scrollTop = 0;
@@ -45,6 +46,7 @@ export function useAutoScroll({
 }: UseAutoScrollOptions) {
   const pausedRef = useRef(false);
   const advancingRef = useRef(false);
+  const hasLeftTopRef = useRef(false);
   const prevActiveIndexRef = useRef(activeIndex);
   const prevEnabledRef = useRef(enabled);
 
@@ -54,6 +56,7 @@ export function useAutoScroll({
       if (section) resetScrollTop(section);
       pausedRef.current = false;
       advancingRef.current = false;
+      hasLeftTopRef.current = false;
       prevActiveIndexRef.current = activeIndex;
     }
   }, [activeIndex, sectionRefs]);
@@ -64,6 +67,7 @@ export function useAutoScroll({
       if (section) resetScrollTop(section);
       pausedRef.current = false;
       advancingRef.current = false;
+      hasLeftTopRef.current = false;
     }
     prevEnabledRef.current = enabled;
   }, [enabled, activeIndex, sectionRefs]);
@@ -137,7 +141,20 @@ export function useAutoScroll({
       }
 
       const section = sectionRefs.current?.[activeIndex];
-      if (!section || pausedRef.current || advancingRef.current) {
+      if (!section || advancingRef.current) {
+        lastTime = timestamp;
+        rafId = requestAnimationFrame(tick);
+        return;
+      }
+
+      if (section.scrollTop > TOP_THRESHOLD) {
+        hasLeftTopRef.current = true;
+      } else if (hasLeftTopRef.current) {
+        hasLeftTopRef.current = false;
+        pausedRef.current = false;
+      }
+
+      if (pausedRef.current) {
         lastTime = timestamp;
         rafId = requestAnimationFrame(tick);
         return;

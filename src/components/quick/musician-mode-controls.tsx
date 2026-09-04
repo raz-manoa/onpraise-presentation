@@ -1,7 +1,7 @@
 "use client";
 
-import { Guitar } from "lucide-react";
-import { useSyncExternalStore } from "react";
+import { Guitar, Minus, Plus, SkipForward } from "lucide-react";
+import { useSyncExternalStore, type ComponentProps } from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -15,76 +15,111 @@ export const MUSICIAN_MODE_STORAGE_KEYS = {
 export const DEFAULT_SCROLL_SPEED = 40;
 export const MIN_SCROLL_SPEED = 20;
 export const MAX_SCROLL_SPEED = 120;
+const SPEED_STEP = 10;
 
 type MusicianModeControlsProps = {
   enabled: boolean;
   onEnabledChange: (enabled: boolean) => void;
+};
+
+export function MusicianModeControls({
+  enabled,
+  onEnabledChange,
+}: MusicianModeControlsProps) {
+  return (
+    <Button
+      type="button"
+      variant={enabled ? "default" : "outline"}
+      size="icon-sm"
+      aria-pressed={enabled}
+      aria-label={
+        enabled ? "Désactiver le mode musicien" : "Activer le mode musicien"
+      }
+      onClick={() => onEnabledChange(!enabled)}
+    >
+      <Guitar />
+    </Button>
+  );
+}
+
+type MusicianModeOverlayProps = {
   speed: number;
   onSpeedChange: (speed: number) => void;
   autoNext: boolean;
   onAutoNextChange: (autoNext: boolean) => void;
 };
 
-export function MusicianModeControls({
-  enabled,
-  onEnabledChange,
+export function MusicianModeOverlay({
   speed,
   onSpeedChange,
   autoNext,
   onAutoNextChange,
-}: MusicianModeControlsProps) {
+}: MusicianModeOverlayProps) {
   return (
-    <>
-      <Button
-        type="button"
-        variant={enabled ? "default" : "outline"}
-        size="icon-sm"
-        aria-pressed={enabled}
-        aria-label={
-          enabled ? "Désactiver le mode musicien" : "Activer le mode musicien"
+    <div className="pointer-events-none absolute right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 grid grid-cols-2 gap-2">
+      <OverlayButton
+        aria-label="Ralentir le défilement"
+        disabled={speed <= MIN_SCROLL_SPEED}
+        onClick={() =>
+          onSpeedChange(Math.max(MIN_SCROLL_SPEED, speed - SPEED_STEP))
         }
-        onClick={() => onEnabledChange(!enabled)}
       >
-        <Guitar />
-      </Button>
+        <Minus className="size-5" />
+      </OverlayButton>
 
-      {enabled && (
-        <div className="col-span-2 flex flex-wrap items-center gap-3 sm:justify-end">
-          <label className="flex min-h-11 min-w-44 items-center gap-2 text-xs text-muted-foreground">
-            <span className="shrink-0">Vitesse</span>
-            <input
-              type="range"
-              min={MIN_SCROLL_SPEED}
-              max={MAX_SCROLL_SPEED}
-              step={1}
-              value={speed}
-              aria-label="Vitesse de défilement"
-              className={cn(
-                "h-2 w-full min-w-24 cursor-pointer accent-primary",
-              )}
-              onChange={(event) => onSpeedChange(Number(event.target.value))}
-            />
-            <span className="w-8 shrink-0 tabular-nums">{speed}</span>
-          </label>
+      <OverlayButton
+        aria-label="Accélérer le défilement"
+        disabled={speed >= MAX_SCROLL_SPEED}
+        onClick={() =>
+          onSpeedChange(Math.min(MAX_SCROLL_SPEED, speed + SPEED_STEP))
+        }
+      >
+        <Plus className="size-5" />
+      </OverlayButton>
 
-          <Button
-            type="button"
-            variant={autoNext ? "default" : "outline"}
-            size="sm"
-            className="min-h-11"
-            aria-pressed={autoNext}
-            aria-label={
-              autoNext
-                ? "Désactiver le passage automatique au chant suivant"
-                : "Activer le passage automatique au chant suivant"
-            }
-            onClick={() => onAutoNextChange(!autoNext)}
-          >
-            Chant suivant auto
-          </Button>
-        </div>
+      <div
+        className="flex size-12 items-center justify-center rounded-full bg-foreground/10 text-xs tabular-nums text-foreground/40 backdrop-blur-[2px]"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-label={`Vitesse de défilement ${speed}`}
+      >
+        {speed}
+      </div>
+
+      <OverlayButton
+        pressed={autoNext}
+        aria-label={
+          autoNext
+            ? "Désactiver le passage automatique au chant suivant"
+            : "Activer le passage automatique au chant suivant"
+        }
+        onClick={() => onAutoNextChange(!autoNext)}
+      >
+        <SkipForward className="size-5" />
+      </OverlayButton>
+    </div>
+  );
+}
+
+function OverlayButton({
+  pressed = false,
+  className,
+  ...props
+}: ComponentProps<typeof Button> & { pressed?: boolean }) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-lg"
+      aria-pressed={pressed}
+      className={cn(
+        "pointer-events-auto size-12 rounded-full border-0 bg-foreground/10 text-foreground/40 shadow-none backdrop-blur-[2px]",
+        "hover:bg-foreground/18 hover:text-foreground/65",
+        pressed && "bg-foreground/18 text-foreground/65",
+        className,
       )}
-    </>
+      {...props}
+    />
   );
 }
 

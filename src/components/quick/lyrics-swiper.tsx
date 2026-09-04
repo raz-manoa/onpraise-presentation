@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   MusicianModeControls,
+  MusicianModeOverlay,
   useMusicianModePreferences,
 } from "@/components/quick/musician-mode-controls";
 import { PreviewOnboardingOverlay } from "@/components/quick/preview-onboarding-overlay";
@@ -106,7 +107,7 @@ export function LyricsSwiper({ playlistTitle, songs }: LyricsSwiperProps) {
       </div>
 
       <header className="sticky top-1 z-10 border-b bg-background/95 px-4 py-3 backdrop-blur">
-        <div className="mx-auto grid max-w-3xl grid-cols-[1fr_auto] items-start gap-x-3 gap-y-2">
+        <div className="mx-auto flex max-w-3xl items-start justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
               {playlistTitle}
@@ -123,10 +124,6 @@ export function LyricsSwiper({ playlistTitle, songs }: LyricsSwiperProps) {
           <MusicianModeControls
             enabled={musicianMode}
             onEnabledChange={setMusicianMode}
-            speed={scrollSpeed}
-            onSpeedChange={setScrollSpeed}
-            autoNext={autoNext}
-            onAutoNextChange={setAutoNext}
           />
         </div>
       </header>
@@ -162,6 +159,15 @@ export function LyricsSwiper({ playlistTitle, songs }: LyricsSwiperProps) {
             </section>
           ))}
         </div>
+
+        {musicianMode ? (
+          <MusicianModeOverlay
+            speed={scrollSpeed}
+            onSpeedChange={setScrollSpeed}
+            autoNext={autoNext}
+            onAutoNextChange={setAutoNext}
+          />
+        ) : null}
 
         {songs.length > 1 ? (
           <>
