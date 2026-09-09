@@ -11,6 +11,7 @@ import {
 import { PreviewOnboardingOverlay } from "@/components/quick/preview-onboarding-overlay";
 import { useAutoScroll } from "@/components/quick/use-auto-scroll";
 import { Button } from "@/components/ui/button";
+import { annotateChordLines } from "@/lib/chord-lines";
 import { cn } from "@/lib/utils";
 
 type QuickSong = {
@@ -32,10 +33,14 @@ export function LyricsSwiper({ playlistTitle, songs }: LyricsSwiperProps) {
     enabled: musicianMode,
     speed: scrollSpeed,
     autoNext,
+    hideChordsByDefault,
     setEnabled: setMusicianMode,
     setSpeed: setScrollSpeed,
     setAutoNext,
+    setHideChordsByDefault,
   } = useMusicianModePreferences();
+
+  const showChords = musicianMode || !hideChordsByDefault;
 
   const progress =
     songs.length > 0 ? ((activeIndex + 1) / songs.length) * 100 : 0;
@@ -148,11 +153,12 @@ export function LyricsSwiper({ playlistTitle, songs }: LyricsSwiperProps) {
               <div className="mx-auto max-w-3xl">
                 <h1 className="mb-6 text-2xl font-bold">{song.title}</h1>
                 <div
-                  className="whitespace-pre-wrap text-base sm:text-lg [&_strong]:font-bold"
+                  className={cn(
+                    "whitespace-pre-wrap text-base sm:text-lg [&_strong]:font-bold [&_.chord-line]:font-bold [&_.chord-line]:text-primary",
+                    !showChords && "[&_.chord-line]:hidden",
+                  )}
                   dangerouslySetInnerHTML={{
-                    __html: song.lyrics.includes("<br")
-                      ? song.lyrics
-                      : song.lyrics.replace(/\n/g, "<br>"),
+                    __html: annotateChordLines(song.lyrics),
                   }}
                 />
               </div>
@@ -166,6 +172,8 @@ export function LyricsSwiper({ playlistTitle, songs }: LyricsSwiperProps) {
             onSpeedChange={setScrollSpeed}
             autoNext={autoNext}
             onAutoNextChange={setAutoNext}
+            hideChordsByDefault={hideChordsByDefault}
+            onHideChordsByDefaultChange={setHideChordsByDefault}
           />
         ) : null}
 

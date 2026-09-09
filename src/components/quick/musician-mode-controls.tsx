@@ -1,6 +1,6 @@
 "use client";
 
-import { Guitar, Minus, Plus, SkipForward } from "lucide-react";
+import { Guitar, Minus, Music, Plus, SkipForward } from "lucide-react";
 import { useSyncExternalStore, type ComponentProps } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ export const MUSICIAN_MODE_STORAGE_KEYS = {
   enabled: "onpraise-musician-mode-enabled",
   speed: "onpraise-musician-scroll-speed",
   autoNext: "onpraise-musician-auto-next",
+  hideChordsByDefault: "onpraise-hide-chords-by-default",
 } as const;
 
 export const DEFAULT_SCROLL_SPEED = 40;
@@ -47,6 +48,8 @@ type MusicianModeOverlayProps = {
   onSpeedChange: (speed: number) => void;
   autoNext: boolean;
   onAutoNextChange: (autoNext: boolean) => void;
+  hideChordsByDefault: boolean;
+  onHideChordsByDefaultChange: (hideChordsByDefault: boolean) => void;
 };
 
 export function MusicianModeOverlay({
@@ -54,6 +57,8 @@ export function MusicianModeOverlay({
   onSpeedChange,
   autoNext,
   onAutoNextChange,
+  hideChordsByDefault,
+  onHideChordsByDefaultChange,
 }: MusicianModeOverlayProps) {
   return (
     <div className="pointer-events-none absolute right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 grid grid-cols-2 gap-2">
@@ -97,6 +102,18 @@ export function MusicianModeOverlay({
       >
         <SkipForward className="size-5" />
       </OverlayButton>
+
+      <OverlayButton
+        pressed={hideChordsByDefault}
+        aria-label={
+          hideChordsByDefault
+            ? "Toujours afficher les accords"
+            : "Cacher les accords par défaut"
+        }
+        onClick={() => onHideChordsByDefaultChange(!hideChordsByDefault)}
+      >
+        <Music className="size-5" />
+      </OverlayButton>
     </div>
   );
 }
@@ -127,12 +144,14 @@ type MusicianModePreferences = {
   enabled: boolean;
   speed: number;
   autoNext: boolean;
+  hideChordsByDefault: boolean;
 };
 
 const SERVER_SNAPSHOT: MusicianModePreferences = {
   enabled: false,
   speed: DEFAULT_SCROLL_SPEED,
   autoNext: false,
+  hideChordsByDefault: true,
 };
 
 let clientSnapshot: MusicianModePreferences = SERVER_SNAPSHOT;
@@ -174,16 +193,20 @@ export function readMusicianModePreferences(): MusicianModePreferences {
     : DEFAULT_SCROLL_SPEED;
   const autoNext =
     localStorage.getItem(MUSICIAN_MODE_STORAGE_KEYS.autoNext) === "1";
+  const hideChordsByDefault =
+    localStorage.getItem(MUSICIAN_MODE_STORAGE_KEYS.hideChordsByDefault) !==
+    "0";
 
   if (
     clientSnapshot.enabled === enabled &&
     clientSnapshot.speed === speed &&
-    clientSnapshot.autoNext === autoNext
+    clientSnapshot.autoNext === autoNext &&
+    clientSnapshot.hideChordsByDefault === hideChordsByDefault
   ) {
     return clientSnapshot;
   }
 
-  clientSnapshot = { enabled, speed, autoNext };
+  clientSnapshot = { enabled, speed, autoNext, hideChordsByDefault };
   return clientSnapshot;
 }
 
@@ -215,10 +238,19 @@ export function useMusicianModePreferences() {
     emitPreferenceChange();
   }
 
+  function setHideChordsByDefault(hideChordsByDefault: boolean) {
+    localStorage.setItem(
+      MUSICIAN_MODE_STORAGE_KEYS.hideChordsByDefault,
+      hideChordsByDefault ? "1" : "0",
+    );
+    emitPreferenceChange();
+  }
+
   return {
     ...prefs,
     setEnabled,
     setSpeed,
     setAutoNext,
+    setHideChordsByDefault,
   };
 }
